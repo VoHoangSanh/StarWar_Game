@@ -1,15 +1,8 @@
-/*
- * Click nbfs://nbhost/SystemFileSystem/Templates/Licenses/license-default.txt to change this license
- * Click nbfs://nbhost/SystemFileSystem/Templates/Classes/Class.java to edit this template
- */
 package game.main;
 
-import game.component.PanelGame;
+import game.component.GamePanel;
 import java.awt.BorderLayout;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import javax.swing.JFrame;
-
 
 public class Main extends JFrame {
     
@@ -24,18 +17,22 @@ public class Main extends JFrame {
         setResizable(false);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setLayout(new BorderLayout());
-        PanelGame panelGame = new PanelGame();
-        add(panelGame);
         
-        addWindowListener(new WindowAdapter(){
+        GamePanel panelGame = new GamePanel();
+        add(panelGame, BorderLayout.CENTER);
+        
+        addWindowListener(new java.awt.event.WindowAdapter() {
             @Override
-            public void windowOpened(WindowEvent e) {
+            public void windowOpened(java.awt.event.WindowEvent e) {
+                panelGame.createBufferStrategy(3); // Tạo BufferStrategy sau khi thêm vào JFrame
                 panelGame.start();
             }
+
+            @Override
+            public void windowClosing(java.awt.event.WindowEvent e) {
+                panelGame.stop();
+            }
         });
-        
-       
-        
     }
     
     public static void main(String[] args) {
