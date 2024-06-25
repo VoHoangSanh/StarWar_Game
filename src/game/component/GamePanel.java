@@ -4,7 +4,7 @@ import game.obj.Bullet;
 import game.obj.SoundShot; 
 import game.obj.Enemy; 
 import game.obj.Explosion; 
-//import game.obj.Health; 
+import game.obj.Health; 
 
 
 import javax.imageio.ImageIO;
@@ -40,6 +40,8 @@ public class GamePanel extends Canvas implements Runnable {
     private List<Bullet> bullets = new ArrayList<>(); // Danh sách các viên đạn
     private String shootSoundFile = "/game/soundFX/shot-lazer.wav"; // Đường dẫn tới tệp âm thanh
     
+    
+    
     private BufferedImage enemyImage;
     private BufferedImage[] explosionFrames;
     private int enemySpeed = 3; // Tốc độ di chuyển của kẻ địch
@@ -48,11 +50,16 @@ public class GamePanel extends Canvas implements Runnable {
     private Random random = new Random();
     
 //    //Health
-//    private List<Health> healths = new ArrayList<>(); // Danh sách các máu của người chơi
-//    private boolean playerHit = false; // Biến để kiểm tra người chơi bị va chạm
-//    private long hitStartTime; // Thời gian bắt đầu va chạm
-//    private int healthCount = 3; // Số lượng máu của người chơi
-//    private BufferedImage healthImage;
+    private List<Health> healths = new ArrayList<>(); // Danh sách các máu của người chơi
+    private boolean playerHit = false; // Biến để kiểm tra người chơi bị va chạm
+    private long hitStartTime; // Thời gian bắt đầu va chạm
+    private int healthCount = 3; // Số lượng máu của người chơi
+    private BufferedImage healthImage;
+    private int healthWidth, healthHeight;
+    
+    private BufferedImage flashImage; // Hình ảnh hiệu ứng flash
+    private boolean showFlash; // Biến để hiển thị hiệu ứng
+    private long flashStartTime; // Thời gian bắt đầu hiệu ứng
 
     public GamePanel() {
         key = new Key();
@@ -67,20 +74,31 @@ public class GamePanel extends Canvas implements Runnable {
             bulletImage = ImageIO.read(getClass().getResource("/game/image/shoot2.png"));
             playerImage = playerImageDefault; // Đặt hình ảnh mặc định
             enemyImage = ImageIO.read(getClass().getResource("/game/image/asteroid.png"));
-//            healthImage = ImageIO.read(getClass().getResource("/game/image/health.png"));
+            healthImage = ImageIO.read(getClass().getResource("/game/image/health.png"));
+            flashImage = ImageIO.read(getClass().getResource("/game/image/flash.png"));
             explosionFrames = new BufferedImage[] {
                 ImageIO.read(getClass().getResource("/game/image/hit1.png")),
                 ImageIO.read(getClass().getResource("/game/image/hit2.png")),
                 ImageIO.read(getClass().getResource("/game/image/hit3.png")),
                 ImageIO.read(getClass().getResource("/game/image/hit4.png"))
             };
+            
+             // Kích thước của máu
+            healthWidth = healthImage.getWidth() / 22;
+            healthHeight = healthImage.getHeight() / 22;
+            int spacing = -5;
+
 //            // Tạo các đối tượng máu của người chơi
-//            for (int i = 0; i < healthCount; i++) {
-//                healths.add(new Health(10 + i * (healthImage.getWidth() + 5), 10, healthImage));
-//            }
+           // Tạo các đối tượng máu của người chơi
+            for (int i = 0; i < healthCount; i++) {
+                healths.add(new Health(i * (healthWidth + spacing), -healthHeight - 1, healthImage, healthWidth, healthHeight, spacing));
+            }
         } catch (IOException e) {
             e.printStackTrace();
+            
         }
+        showFlash = false;
+        flashStartTime = 0;
 
         addKeyListener(new KeyAdapter() {
             @Override
@@ -197,10 +215,12 @@ public class GamePanel extends Canvas implements Runnable {
         // Xử lý logic bắn đạn
         if (key.isKey_shoot()) {
             long currentTime = System.currentTimeMillis();
-            if (currentTime - lastShootTime >= 350) { // Kiểm tra khoảng cách thời gian giữa các lần bắn
-                    bullets.add(new Bullet(playerX + playerWidth / 2 - bulletImage.getWidth() / 2 + bulletOffsetX, playerY + bulletOffsetY, bulletSpeed, bulletImage));
-                    SoundShot.playSound(shootSoundFile); // Phát âm thanh khi bắn
-                    lastShootTime = currentTime;
+            if (currentTime - lastShootTime >= 350) {
+                bullets.add(new Bullet(playerX + playerWidth / 2 - bulletImage.getWidth() / 2 + bulletOffsetX, playerY + bulletOffsetY, bulletSpeed, bulletImage, flashImage));
+                SoundShot.playShotSound(); // Phát âm thanh khi bắn
+                lastShootTime = currentTime;
+                showFlash = true;
+                flashStartTime = currentTime;
             }
         }
 
@@ -212,6 +232,10 @@ public class GamePanel extends Canvas implements Runnable {
                 bullets.remove(i);
                 i--;
             }
+        }
+        // Kiểm tra và cập nhật hiệu ứng flash
+        if (showFlash && System.currentTimeMillis() - flashStartTime >= 200) {
+            showFlash = false;
         }
         // Cập nhật vị trí của các kẻ địch
         for (int i = 0; i < enemies.size(); i++) {
@@ -240,7 +264,9 @@ public class GamePanel extends Canvas implements Runnable {
                 Rectangle enemyHitbox = new Rectangle(enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
                 if (bulletHitbox.intersects(enemyHitbox)) {
                     // Tạo hiệu ứng nổ
-                    explosions.add(new Explosion(enemy.getX(), enemy.getY(), explosionFrames, 500 / explosionFrames.length));
+                    explosions.add(new Explosion(enemy.getX(), enemy.getY(), explosionFrames, 750 / explosionFrames.length));
+                    // Phát âm thanh khi bắn trúng
+                    
                     // Loại bỏ Bullet và Enemy
                     bullets.remove(i);
                     enemies.remove(j);
@@ -250,30 +276,31 @@ public class GamePanel extends Canvas implements Runnable {
             }
         }
 //        // Kiểm tra va chạm giữa Player và Enemy
-//        Rectangle playerHitbox = new Rectangle(playerX, playerY, playerImage.getWidth() * 2, playerImage.getHeight() * 2);
-//        for (int i = 0; i < enemies.size(); i++) {
-//            Enemy enemy = enemies.get(i);
-//            Rectangle enemyHitbox = new Rectangle(enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
-//            if (playerHitbox.intersects(enemyHitbox)) {
-//                // Bắt đầu hiệu ứng nhấp nháy
-//                playerHit = true;
-//                hitStartTime = System.currentTimeMillis();
-//                enemies.remove(i);
-//                i--;
-//                break;
-//            }
-//        }
+        Rectangle playerHitbox = new Rectangle(playerX, playerY, playerImage.getWidth() * 3, playerImage.getHeight() * 3);
+        for (int i = 0; i < enemies.size(); i++) {
+            Enemy enemy = enemies.get(i);
+            Rectangle enemyHitbox = new Rectangle(enemy.getX(), enemy.getY(), enemy.getWidth(), enemy.getHeight());
+            if (playerHitbox.intersects(enemyHitbox)) {
+                // Bắt đầu hiệu ứng nhấp nháy
+                SoundShot.playExplosionSound();
+                playerHit = true;
+                hitStartTime = System.currentTimeMillis();
+                enemies.remove(i);
+                i--;
+                break;
+            }
+        }
 
-//        // Xử lý hiệu ứng nhấp nháy khi người chơi bị va chạm
-//        if (playerHit) {
-//            long currentTime = System.currentTimeMillis();
-//            if (currentTime - hitStartTime >= 750) {
-//                playerHit = false;
-//                if (healths.size() > 0) {
-//                    healths.remove(healths.size() - 1); // Loại bỏ một máu của người chơi
-//                }
-//            }
-//        }
+      // Xử lý hiệu ứng nhấp nháy khi người chơi bị va chạm
+        if (playerHit) {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - hitStartTime >= 750) {
+                playerHit = false;
+                if (healths.size() > 0) {
+                    healths.remove(healths.size() - 1); // Loại bỏ một máu của người chơi
+                }
+            }
+        }
         
     }
     
@@ -303,6 +330,7 @@ public class GamePanel extends Canvas implements Runnable {
             g.setColor(Color.WHITE);
             g.fillRect(playerX, playerY, 50, 50); // Vẽ người chơi nếu hình ảnh không tải được
         }
+        
 
         // Vẽ các viên đạn
         for (Bullet bullet : bullets) {
@@ -319,20 +347,25 @@ public class GamePanel extends Canvas implements Runnable {
             explosion.draw(g);
         }
         
-//        // Vẽ máu của người chơi
-//        for (Health health : healths) {
-//            health.draw(g);
-//        }
-//        
-//        // Vẽ người chơi với hiệu ứng nhấp nháy
-//        if (playerHit) {
-//            long currentTime = System.currentTimeMillis();
-//            if ((currentTime - hitStartTime) / 250 % 2 == 0) {
-//                g.drawImage(playerImage, playerX, playerY, playerImage.getWidth() * 2, playerImage.getHeight() * 2, null);
-//            }
-//        } else {
-//            g.drawImage(playerImage, playerX, playerY, playerImage.getWidth() * 2, playerImage.getHeight() * 2, null);
-//        }
+        // Vẽ máu của người chơi bám theo người chơi
+        for (Health health : healths) {
+            health.draw(g, playerX, playerY);
+        }
+      // Hiển thị hiệu ứng flash khi bắn đạn
+        if (showFlash && System.currentTimeMillis() - flashStartTime < 500) { // Thời gian hiển thị là 0.5 giây (500ms)
+            int playerWidth = playerImage != null ? playerImage.getWidth() * 3 : 50; // Cập nhật giá trị cho playerWidth
+
+            // Tăng kích thước của hiệu ứng "flash.png"
+            int flashWidth = flashImage.getWidth() + 14; // Nhân đôi chiều rộng
+            int flashHeight = flashImage.getHeight() +14; // Nhân đôi chiều cao
+
+            int flashX = playerX + playerWidth / 2 - flashWidth / 2+ bulletOffsetX;
+            int flashY = playerY + bulletOffsetY - 5; // Điều chỉnh vị trí Y lên phía trên 20 đơn vị
+
+            g.drawImage(flashImage, flashX, flashY, flashWidth, flashHeight, null); // Vẽ hiệu ứng "flash.png" với kích thước tăng lên
+        }
+       
+        
 
         g.dispose();
         bs.show();

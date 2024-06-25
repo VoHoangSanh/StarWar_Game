@@ -5,7 +5,18 @@ import java.io.IOException;
 import java.net.URL;
 
 public class SoundShot {
-    public static void playSound(String soundFile) {
+    public static void playShotSound() {
+        playSound("/game/soundFX/shot-lazer.wav");
+    }
+
+
+
+    public static void playExplosionSound() {
+        playSound("/game/soundFX/hit.wav");
+        
+    }
+
+    private static void playSound(String soundFile) {
         try {
             URL url = SoundShot.class.getResource(soundFile);
             if (url == null) {
@@ -16,7 +27,7 @@ public class SoundShot {
             Clip clip = AudioSystem.getClip();
             clip.open(audioStream);
             clip.start();
-        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException | NullPointerException e) {
             e.printStackTrace();
         }
     }
