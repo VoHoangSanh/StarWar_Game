@@ -8,6 +8,10 @@ public class SoundShot {
     public static void playShotSound() {
         playSound("/game/soundFX/shot-lazer.wav");
     }
+    
+    public static void playBigShotSound() {
+    playSound("/game/soundFX/shot-lazer.wav");
+}
 
 
 

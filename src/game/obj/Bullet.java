@@ -2,6 +2,7 @@ package game.obj;
 
 import java.awt.Color;
 import java.awt.Graphics;
+import java.awt.Rectangle;
 import java.awt.image.BufferedImage;
 
 public class Bullet {
@@ -11,6 +12,8 @@ public class Bullet {
     private BufferedImage flashImage;
     private boolean showFlash;
     private long flashStartTime;
+    
+     private boolean isBigBullet;
 
     public Bullet(int x, int y, int speed, BufferedImage image, BufferedImage flashImage) {
         this.x = x;
@@ -20,6 +23,15 @@ public class Bullet {
         this.flashImage = flashImage;
         this.showFlash = true;
         this.flashStartTime = System.currentTimeMillis();
+    }
+    
+    public Bullet(int x, int y, int speed, BufferedImage image, BufferedImage flashImage, boolean isBigBullet) {
+        this.x = x;
+        this.y = y;
+        this.speed = speed;
+        this.image = image;
+        this.flashImage = flashImage;
+        this.isBigBullet = isBigBullet;
     }
 
     public void update() {
@@ -38,6 +50,13 @@ public class Bullet {
         // g.setColor(Color.GREEN);
         // g.drawRect(x, y, width, height);
     }
+    
+    
+     public Rectangle getHitbox() {
+        return new Rectangle(x, y, isBigBullet ? image.getWidth() * 2 : image.getWidth(), 
+                             isBigBullet ? image.getHeight() * 2 : image.getHeight());
+    }
+    
 
     public boolean isOffScreen(int screenHeight) {
         return y + image.getHeight() * 2 < 0; // Kiểm tra với chiều cao nhân đôi

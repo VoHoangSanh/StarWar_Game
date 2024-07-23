@@ -46,4 +46,17 @@ public class Key {
     public void setKey_shoot(boolean key_shoot) {
         this.key_shoot = key_shoot;
     }
+    
+    
+     private boolean key_bigShoot;  // Right mouse
+
+    // ... (các getter/setter khác giữ nguyên)
+
+    public boolean isKey_bigShoot() {
+        return key_bigShoot;
+    }
+
+    public void setKey_bigShoot(boolean key_bigShoot) {
+        this.key_bigShoot = key_bigShoot;
+    }
 }
